@@ -1,3 +1,9 @@
+-- Commands to launch mannually to install missing package:
+-- :PylspInstall python-lsp-server[all]
+-- :PylspInstall python-lsp-isort
+-- :PylspInstall pylsp-mypy
+-- :PylspInstall python-lsp-black
+--
 --[[
 
 =====================================================================
@@ -74,6 +80,26 @@ require('lazy').setup({
   -- Detect tabstop and shiftwidth automatically
   'tpope/vim-sleuth',
 
+  -- Set cursor to last place when opening a file
+  'ethanholz/nvim-lastplace',
+
+  -- Set better tab line
+  'nanozuki/tabby.nvim',
+
+  -- File explorer
+  {
+    'nvim-tree/nvim-tree.lua',
+    dependencies = {
+      'nvim-tree/nvim-web-devicons',
+    }
+  },
+
+  -- Tab - Using telescope buffer for now
+  -- {'akinsho/bufferline.nvim',
+  --   version = "*",
+  --   dependencies = 'nvim-tree/nvim-web-devicons'
+  -- },
+
   -- NOTE: This is where your plugins related to LSP can be installed.
   --  The configuration is done below. Search for lspconfig to find it below.
   {
@@ -131,15 +157,24 @@ require('lazy').setup({
     },
   },
 
+  -- {
+  --   -- Theme inspired by Atom
+  --   'navarasu/onedark.nvim',
+  --   priority = 1000,
+  --   config = function()
+  --     vim.cmd.colorscheme 'onedark'
+  --   end,
+  -- },
   {
-    -- Theme inspired by Atom
-    'navarasu/onedark.nvim',
+    'sainnhe/sonokai',
     priority = 1000,
     config = function()
-      vim.cmd.colorscheme 'onedark'
+      vim.cmd.colorscheme 'sonokai'
+      vim.g.sonokai_style = 'andromeda'
+      vim.g.sonokai_enable_italic = 1
+      vim.g.sonokai_disable_italic_comment = 1
     end,
   },
-
   {
     -- Set lualine as statusline
     'nvim-lualine/lualine.nvim',
@@ -147,10 +182,31 @@ require('lazy').setup({
     opts = {
       options = {
         icons_enabled = false,
-        theme = 'onedark',
+        theme = 'sonokai',
         component_separators = '|',
         section_separators = '',
       },
+      sections = {
+        lualine_a = {'mode'},
+        lualine_b = {'branch', 'diff', 'diagnostics'},
+        lualine_c = {
+          {'filename', file_status=true, path=1}
+        },
+        lualine_x = {'encoding', 'fileformat', 'filetype'},
+        lualine_y = {'progress'},
+        lualine_z = {'location'}
+      },
+      inactive_sections = {
+        lualine_a = {},
+        lualine_b = {},
+        lualine_c = {
+          {'filename', path=1}
+        },
+        lualine_x = {'location'},
+        lualine_y = {},
+        lualine_z = {}
+      },
+
     },
   },
 
@@ -218,18 +274,22 @@ require('lazy').setup({
 -- NOTE: You can change these options as you wish!
 
 -- Set highlight on search
-vim.o.hlsearch = false
+vim.o.hlsearch = true
 
 -- Make line numbers default
 vim.wo.number = true
 
 -- Enable mouse mode
-vim.o.mouse = 'a'
+vim.o.mouse = 'c'
 
 -- Sync clipboard between OS and Neovim.
 --  Remove this option if you want your OS clipboard to remain independent.
 --  See `:help 'clipboard'`
 vim.o.clipboard = 'unnamedplus'
+
+-- No backup file
+vim.o.nobackup = true
+vim.o.noswapfile = true
 
 -- Enable break indent
 vim.o.breakindent = true
@@ -286,6 +346,15 @@ require('telescope').setup {
       },
     },
   },
+  pickers = {
+    buffers = {
+      sort_mru = true,
+      ignore_current_buffer = true
+    },
+    live_grep = {
+      additional_args = {'-F'}
+    }
+  }
 }
 
 -- Enable telescope fzf native, if installed
@@ -293,7 +362,6 @@ pcall(require('telescope').load_extension, 'fzf')
 
 -- See `:help telescope.builtin`
 vim.keymap.set('n', '<leader>?', require('telescope.builtin').oldfiles, { desc = '[?] Find recently opened files' })
-vim.keymap.set('n', '<leader><space>', require('telescope.builtin').buffers, { desc = '[ ] Find existing buffers' })
 vim.keymap.set('n', '<leader>/', function()
   -- You can pass additional configuration to telescope to change theme, layout, etc.
   require('telescope.builtin').current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
@@ -302,11 +370,13 @@ vim.keymap.set('n', '<leader>/', function()
   })
 end, { desc = '[/] Fuzzily search in current buffer' })
 
+vim.keymap.set('n', '<leader>p', require('telescope.builtin').find_files, { desc = '[S]earch [F]iles' })
+vim.keymap.set('n', '<leader>g', require('telescope.builtin').live_grep, { desc = '[S]earch by [G]rep' })
+vim.keymap.set('n', '<leader><space>', require('telescope.builtin').buffers, { desc = '[ ] Find existing buffers' })
+
 vim.keymap.set('n', '<leader>gf', require('telescope.builtin').git_files, { desc = 'Search [G]it [F]iles' })
-vim.keymap.set('n', '<leader>sf', require('telescope.builtin').find_files, { desc = '[S]earch [F]iles' })
 vim.keymap.set('n', '<leader>sh', require('telescope.builtin').help_tags, { desc = '[S]earch [H]elp' })
 vim.keymap.set('n', '<leader>sw', require('telescope.builtin').grep_string, { desc = '[S]earch current [W]ord' })
-vim.keymap.set('n', '<leader>sg', require('telescope.builtin').live_grep, { desc = '[S]earch by [G]rep' })
 vim.keymap.set('n', '<leader>sd', require('telescope.builtin').diagnostics, { desc = '[S]earch [D]iagnostics' })
 
 -- [[ Configure Treesitter ]]
@@ -316,7 +386,7 @@ require('nvim-treesitter.configs').setup {
   ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'typescript', 'vimdoc', 'vim' },
 
   -- Autoinstall languages that are not installed. Defaults to false (but you can change for yourself!)
-  auto_install = false,
+  auto_install = true,
 
   highlight = { enable = true },
   indent = { enable = true },
@@ -442,12 +512,42 @@ local servers = {
   -- tsserver = {},
   -- html = { filetypes = { 'html', 'twig', 'hbs'} },
 
+  -- lua
   lua_ls = {
     Lua = {
       workspace = { checkThirdParty = false },
       telemetry = { enable = false },
     },
   },
+
+  -- python
+  pylsp = {
+    filetypes = {'python'},
+    plugins = {
+      -- formatter options
+      black = { enabled = false },
+      autopep8 = { enabled = false },
+      yapf = { enabled = false },
+      -- linter options
+      pylint = { enabled = true, executable = "pylint" },
+      pyflakes = { enabled = false },
+      pycodestyle = { enabled = false },
+      -- type checker
+      pylsp_mypy = { enabled = true },
+      -- auto-completion options
+      jedi_completion = { enabled = false, fuzzy = true },
+      -- import sorting
+      pyls_isort = { enabled = true },
+    },
+  },
+  jedi_language_server = {
+    filetypes = {'python'},
+  },
+
+  -- javascript
+  quick_lint_js = {
+    filetypes = {'javascript'}
+  }
 }
 
 -- Setup neovim lua configuration
@@ -523,5 +623,88 @@ cmp.setup {
   },
 }
 
+
+
+-- configure file explorer
+-- disable netrw at the very start of your init.lua
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
+
+-- OR setup with some options
+local function nvim_tree_on_attach(bufnr)
+  local api = require "nvim-tree.api"
+
+  local function opts(desc)
+    return { desc = "nvim-tree: " .. desc, buffer = bufnr, noremap = true, silent = true, nowait = true }
+  end
+
+  -- default mappings
+  api.config.mappings.default_on_attach(bufnr)
+
+  -- custom mappings
+  vim.keymap.set('n', 's', api.node.open.vertical, opts('Open in new tab'))
+  vim.keymap.set('n', '?', api.tree.toggle_help, opts('Help'))
+end
+require("nvim-tree").setup({
+  sort_by = "case_sensitive",
+  renderer = {
+    group_empty = true,
+    icons = {
+      show = {
+        file = true,
+        folder = false,
+        folder_arrow = true,
+        git = true,
+        modified = true
+      }
+    }
+  },
+  filters = {
+    dotfiles = true,
+  },
+  on_attach = nvim_tree_on_attach,
+})
+vim.keymap.set('n', '<F2>', require('nvim-tree.api').tree.toggle, { desc = 'Open File Explorer' })
+
+
+
+-- configure tab
+--require("bufferline").setup{}
+-- vim.keymap.set('n', 'nn', ':BufferLineCycleNext<CR>')
+-- vim.keymap.set('n', 'pp', ':BufferLineCyclePrev<CR>')
+--nnoremap <C-N> :BufferLineMoveNext<CR>
+--nnoremap <C-R> :BufferLineMovePrev<CR>
+
+
+
+-- configure last place
+require'nvim-lastplace'.setup {
+    lastplace_ignore_buftype = {"quickfix", "nofile", "help"},
+    lastplace_ignore_filetype = {"gitcommit", "gitrebase", "svn", "hgcommit"},
+    lastplace_open_folds = true
+}
+
+
+-- autoreload file when modified outside of nvim
+vim.o.autoread = true
+vim.api.nvim_create_autocmd({ "BufEnter", "CursorHold", "CursorHoldI", "FocusGained" }, {
+  command = "if mode() != 'c' | checktime | endif",
+  pattern = { "*" },
+})
+
+
+-- configure tab line
+require('tabby.tabline').use_preset('active_wins_at_tail', {
+  nerdfont = true,
+  --lualine_theme = 'sonokai',
+  --tab_name = {
+  --    name_fallback = 'function({tabid}), return a string',
+  --},
+  --buf_name = {
+  --    mode = "'unique'|'relative'|'tail'|'shorten'",
+  --},
+})
+
+--
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
