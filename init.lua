@@ -86,6 +86,9 @@ require('lazy').setup({
   -- Set better tab line
   'nanozuki/tabby.nvim',
 
+  -- Show trailing space
+  'ntpeters/vim-better-whitespace',
+
   -- File explorer
   {
     'nvim-tree/nvim-tree.lua',
